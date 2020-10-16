@@ -11,7 +11,9 @@ if len(argv) < 4:
 else:
     timeout = int(argv[3])
 
-cases = sorted({splitext(i)[0] for i in listdir(path_data)})
+cases = sorted({splitext(i)[0]
+                for i in listdir(path_data)},
+               key=lambda x: int(x))
 
 pass_counter = 0
 for case in cases:
