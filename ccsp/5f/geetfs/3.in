@@ -1,0 +1,56 @@
+43
+write file1 5 2
+aa
+write file2 2 2
+bb
+read file2 0 3
+ls
+commit cmt1
+write file2 0 1
+c
+write file3 3 1
+d
+unlink file2
+commit cmt2
+read file3 0 5
+commit cmt3
+write file3 3 1
+e
+write file4 0 2
+ff
+commit cmt3
+read file4 0 5
+checkout cmt2
+ls
+unlink file4
+unlink file2
+read file1 0 5
+unlink file1
+ls
+write file4 2 2
+gg
+write file1 3 2
+hh
+read file1 0 5
+checkout cmt3
+write file2 4 2
+ii
+unlink file1
+commit cmt4
+merge cmt4 cmt5
+merge cmt3 cmt5
+ls
+read file4 0 5
+unlink file4
+merge cmt4 cmt6
+write file1 8 1
+j
+commit cmt6
+read file1 0 10
+checkout cmt5
+write file3 1 1
+k
+write file4 2 1
+l
+read file1 0 10
+ls

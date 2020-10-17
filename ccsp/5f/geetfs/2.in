@@ -1,0 +1,28 @@
+22
+write file1 3 2
+ab
+commit cmt1
+write file2 2 4
+cdef
+read file1 0 10
+ls
+unlink file1
+commit cmt2
+ls
+checkout cmt1
+read file1 0 10
+write file1 6 2
+gh
+write file3 2 3
+ijk
+commit cmt3
+ls
+checkout cmt2
+ls
+merge cmt3 cmt4
+ls
+read file3 0 10
+checkout cmt3
+write file3 5 3
+lmn
+read file3 0 10

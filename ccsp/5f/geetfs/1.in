@@ -1,0 +1,14 @@
+10
+write file1 5 2
+78
+write file2 7 4
+abcd
+read file1 0 10
+ls
+read file2 4 10
+unlink file2
+ls
+read file2 3 4
+write file2 1 2
+12
+read file2 0 4
