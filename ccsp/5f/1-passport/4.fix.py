@@ -1,3 +1,8 @@
+import sys
+
+# sys.stdin = open(
+#     r"E:\WAS\Works\LeetCodeX\ccsp\5f\1-passport\materials\data\1-1.in")
+
 import bisect
 from collections import UserList, namedtuple
 from math import inf, isclose
@@ -24,7 +29,9 @@ class Node:
 
 # 1 读入图
 V, U, E, C = map(int, input().split())
-graph = [Node(i) for i in range(V)]
+# !妈的，连图都没都进去就挂了！
+# graph = [Node(i) for i in range(V)]
+graph = [Node(i) for i in range(V + 1)]
 
 spy_centers: List[Tuple[Node, int]] = []
 for i in range(1, U + 1):
