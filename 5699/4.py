@@ -166,3 +166,6 @@ edges = [
 sln = Solution()
 ans = sln.countRestrictedPaths(n, edges)
 print(ans)
+
+# * 我今天才知道这个想法还能被优化！
+# * Dij算法的特性可以正好与斐波那契堆结合！
