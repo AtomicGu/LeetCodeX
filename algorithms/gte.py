@@ -1,10 +1,19 @@
 """图论编辑器
+
+左键双击添加结点
+右键双击删除结点
+
+左键单击拖动结点
+右键单击选中结点和连线，再次连线以取消连线
+
+按空格键给结点统一编号
 """
 
 from typing import List
-from matplotlib.patches import FancyArrowPatch
-from matplotlib.backend_bases import MouseButton, MouseEvent
+
 import matplotlib.pyplot as plt
+from matplotlib.backend_bases import KeyEvent, MouseButton, MouseEvent
+from matplotlib.patches import FancyArrowPatch
 
 
 class Node:
@@ -22,7 +31,7 @@ class Node:
     def __repr__(self) -> str:
         to_index = {to.index for to in self.tos}
         fr_index = {fr.index for fr in self.frs}
-        return f"{self.index} -> {to_index}\n\t<- {fr_index}"
+        return f"\n{self.index} -> {to_index}\n   <- {fr_index}"
 
     def link_to(self, other: "Node"):
         """单向连接
@@ -43,10 +52,21 @@ Graph_t = List[Node]  # 图就是 Node 列，每个 Node 的索引就是下标
 
 
 class NodeUi:
-    def __init__(self, x, y, ax: plt.Axes):
-        self.circle = plt.Circle((x, y), 0.05, lw=3, edgecolor="black")
+    def __init__(self, x, y, ax: plt.Axes, *, radius=0.05, index=None):
+        self.circle = plt.Circle(
+            (x, y),
+            radius,
+            lw=2,
+            edgecolor="#84affa",
+            facecolor="#c6e5ff",
+        )
         self.ax = ax
         ax.add_patch(self.circle)
+
+        if index is None:
+            index = str(id(self) % 100)
+        self.index = plt.Text(x, y, index, size="small")
+        ax.add_artist(self.index)
 
         self.tos = {}
         self.frs = {}
@@ -57,7 +77,7 @@ class NodeUi:
         return
 
     def set_unselected(self):
-        self.circle.set_edgecolor("black")
+        self.circle.set_edgecolor("#84affa")
         return
 
     def link_to(self, other: "NodeUi"):
@@ -66,7 +86,17 @@ class NodeUi:
 
         xy0 = self.circle.get_center()
         xy1 = other.circle.get_center()
-        edge = FancyArrowPatch(xy0, xy1)
+        edge = FancyArrowPatch(
+            xy0,
+            xy1,
+            arrowstyle="-|>",
+            mutation_scale=20,
+            shrinkB=13,
+            edgecolor="#7f7f7f",
+            facecolor="#7f7f7f",
+            linewidth=2,
+            zorder=0,
+        )
         self.ax.add_patch(edge)
 
         self.tos[other] = edge
@@ -88,6 +118,7 @@ class NodeUi:
     def set_position(self, x, y):
         xy = (x, y)
         self.circle.set_center(xy)
+        self.index.set_position(xy)
         for to, edge in self.tos.items():
             edge.set_positions(xy, to.get_position())
         for fr, edge in self.frs.items():
@@ -99,6 +130,7 @@ class NodeUi:
 
     def set_animated(self, b: bool):
         self.circle.set_animated(b)
+        self.index.set_animated(b)
         for edge in self.tos.values():
             edge.set_animated(b)
         for edge in self.frs.values():
@@ -108,6 +140,7 @@ class NodeUi:
     def draw(self):
         renderer = self.ax.figure.canvas.get_renderer()
         self.circle.draw(renderer)
+        self.index.draw(renderer)
         for edge in self.tos.values():
             edge.draw(renderer)
         for edge in self.frs.values():
@@ -116,6 +149,7 @@ class NodeUi:
 
     def remove(self):
         self.circle.remove()
+        self.index.remove()
 
         for to, edge in self.tos.items():
             to.frs.pop(self)
@@ -127,6 +161,13 @@ class NodeUi:
             edge.remove()
         self.frs = {}
         return
+
+    def set_index(self, index: int):
+        self.index.set_text(str(index))
+        return
+
+    def get_index(self) -> int:
+        return int(self.index.get_text())
 
 
 class GraphUi:
@@ -146,10 +187,15 @@ class GraphUi:
             "button_press_event",
             self.on_press,
         )
+        self.cid_key_press = self.can.mpl_connect(
+            "key_press_event",
+            self.on_key_press,
+        )
         return
 
     def disconnect(self):
         self.can.mpl_disconnect(self.cid_press)
+        self.can.mpl_disconnect(self.cid_key_press)
         return
 
     def on_press(self, event: MouseEvent):
@@ -215,6 +261,7 @@ class GraphUi:
                 "button_press_event",
                 self.on_press,
             )
+            self.can.draw()
             return
 
         # 动态注册事件处理器
@@ -247,10 +294,16 @@ class GraphUi:
             self.can.draw()
             return
 
+        # 断开连线
+        if focus in self.selected.tos:
+            self.selected.unlink_to(focus)
+            if not self.directed:
+                focus.unlink_to(self.selected)
         # 连线
-        self.selected.link_to(focus)
-        if not self.directed:
-            focus.link_to(self.selected)
+        else:
+            self.selected.link_to(focus)
+            if not self.directed:
+                focus.link_to(self.selected)
         self.selected.set_unselected()
         self.selected = None
         self.can.draw()
@@ -282,13 +335,37 @@ class GraphUi:
         self.can.draw()
         return
 
+    def on_key_press(self, event: KeyEvent):
+        """按空格给结点编号
+        """
+        if event.key == " ":
+            self.index_nodes()
+            self.can.draw()
+        return
+
+    def index_nodes(self):
+        for j, i in enumerate(self.ui_nodes):
+            i.set_index(j)
+        return
+
+    def output_model(self):
+        """输出数据模型
+        """
+        self.index_nodes()
+        model = [Node(i) for i in range(len(self.ui_nodes))]
+        for i in self.ui_nodes:
+            node = model[i.get_index()]
+            for j in i.tos:
+                node.link_to(model[j.get_index()])
+        return model
+
 
 def input_graph(directed=False):
     graph_ui = GraphUi(plt.gcf(), directed)
     graph_ui.connect()
     plt.show()
-    return
+    return graph_ui.output_model()
 
 
 if __name__ == "__main__":
-    input_graph()
+    print(input_graph(True))
