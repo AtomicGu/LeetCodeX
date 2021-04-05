@@ -360,7 +360,15 @@ class GraphUi:
         return model
 
 
-def input_graph(directed=False):
+def input_graph(directed=False) -> Graph_t:
+    """输入图
+
+    参数：
+        directed (bool): 是否要求有向图，默认为否
+
+    返回：
+        Graph_t: 结点数组，其中的结点已经按下标编号
+    """
     graph_ui = GraphUi(plt.gcf(), directed)
     graph_ui.connect()
     plt.show()
