@@ -1,7 +1,9 @@
 """图论编辑器
 """
-import numpy as np
-import matplotlib as mpl
+
+from typing import List
+from matplotlib.patches import FancyArrowPatch
+from matplotlib.backend_bases import MouseButton, MouseEvent
 import matplotlib.pyplot as plt
 
 
@@ -37,143 +39,256 @@ class Node:
         return
 
 
-class UiNode:
-    focus = None
-    lock = None
+Graph_t = List[Node]  # 图就是 Node 列，每个 Node 的索引就是下标
 
-    def __init__(self, x, y, radius, ax: plt.Axes):
-        self.patch = plt.Circle((x, y), radius, lw=5, edgecolor="black")
-        self.press_pos = None
-        self.background = None
-        self.connect(ax)
 
-        self.outedges = {}
+class NodeUi:
+    def __init__(self, x, y, ax: plt.Axes):
+        self.circle = plt.Circle((x, y), 0.05, lw=3, edgecolor="black")
+        self.ax = ax
+        ax.add_patch(self.circle)
+
+        self.tos = {}
+        self.frs = {}
         return
 
-    def connect(self, ax: plt.Axes):
-        ax.add_patch(self.patch)
-        canvas = ax.figure.canvas
-        self.cids = [
-            canvas.mpl_connect('button_press_event', self.on_press),
-            canvas.mpl_connect('button_release_event', self.on_release),
-            canvas.mpl_connect('motion_notify_event', self.on_motion),
-        ]
+    def set_selected(self):
+        self.circle.set_edgecolor("red")
+        return
+
+    def set_unselected(self):
+        self.circle.set_edgecolor("black")
+        return
+
+    def link_to(self, other: "NodeUi"):
+        if other in self.tos:
+            return
+
+        xy0 = self.circle.get_center()
+        xy1 = other.circle.get_center()
+        edge = FancyArrowPatch(xy0, xy1)
+        self.ax.add_patch(edge)
+
+        self.tos[other] = edge
+        other.frs[self] = edge
+        return
+
+    def unlink_to(self, other: "NodeUi"):
+        edge = self.tos.pop(other, None)
+        if edge is None:
+            return
+
+        other.frs.pop(self)
+        edge.remove()
+        return
+
+    def get_position(self):
+        return self.circle.get_center()
+
+    def set_position(self, x, y):
+        xy = (x, y)
+        self.circle.set_center(xy)
+        for to, edge in self.tos.items():
+            edge.set_positions(xy, to.get_position())
+        for fr, edge in self.frs.items():
+            edge.set_positions(fr.get_position(), xy)
+        return
+
+    def contains(self, event) -> bool:
+        return self.circle.contains(event)[0]
+
+    def set_animated(self, b: bool):
+        self.circle.set_animated(b)
+        for edge in self.tos.values():
+            edge.set_animated(b)
+        for edge in self.frs.values():
+            edge.set_animated(b)
+        return
+
+    def draw(self):
+        renderer = self.ax.figure.canvas.get_renderer()
+        self.circle.draw(renderer)
+        for edge in self.tos.values():
+            edge.draw(renderer)
+        for edge in self.frs.values():
+            edge.draw(renderer)
+        return
+
+    def remove(self):
+        self.circle.remove()
+
+        for to, edge in self.tos.items():
+            to.frs.pop(self)
+            edge.remove()
+        self.tos = {}
+
+        for fr, edge in self.frs.items():
+            fr.tos.pop(self)
+            edge.remove()
+        self.frs = {}
+        return
+
+
+class GraphUi:
+    def __init__(self, fig: plt.Figure, directed=False):
+        fig.clear()
+        self.fig = fig
+        self.can = fig.canvas
+        self.ax = fig.add_subplot(aspect="equal")
+
+        self.directed = directed
+        self.ui_nodes: List[NodeUi] = []
+        self.selected = None
+        return
+
+    def connect(self):
+        self.cid_press = self.can.mpl_connect(
+            "button_press_event",
+            self.on_press,
+        )
         return
 
     def disconnect(self):
-        canvas = self.patch.figure.canvas
-        for cid in self.cids:
-            canvas.mpl_disconnect(cid)
+        self.can.mpl_disconnect(self.cid_press)
         return
 
-    def on_press(self, event: mpl.backend_bases.MouseEvent):
-        # 检查是不是点击自己
-        patch = self.patch
-        ax = patch.axes
-        if event.inaxes != ax or UiNode.lock is not None:
-            return
-        contains, attrd = patch.contains(event)
-        if not contains:
+    def on_press(self, event: MouseEvent):
+        """鼠标事件分流
+        """
+        if event.inaxes is not self.ax:
             return
 
-        if event.button == mpl.backend_bases.MouseButton.LEFT:
-            # 左键单击拖动结点
-            if not event.dblclick:
-                # 记录点击位置
-                x, y = patch.get_center()
-                self.press_pos = event.xdata - x, event.ydata - y
-                UiNode.lock = self
-
-                # 绘制背景并保存到缓冲区
-                patch.set_animated(True)
-                canvas = patch.figure.canvas
-                canvas.draw()
-                self.background = canvas.copy_from_bbox(ax.bbox)
-
-                # 现在只重新绘制选中的图形
-                patch.draw(canvas.get_renderer())
-                canvas.blit(ax.bbox)
-
-        elif event.button == mpl.backend_bases.MouseButton.RIGHT:
-            # 右键双击删除结点
+        if event.button == MouseButton.LEFT:
             if event.dblclick:
-                self.patch.remove()
-                if UiNode.focus is self:
-                    UiNode.focus = None  # 注意指针悬挂
-                ax.figure.canvas.draw()
-
-            # 右键单击给结点连线
+                self.on_left_dbdown(event)
             else:
-                if UiNode.focus is None:
-                    UiNode.focus = self
-                    self.patch.set_edgecolor("red")
-                elif UiNode.focus is self:
-                    self.patch.set_edgecolor("black")
-                    UiNode.focus = None
-                else:
-                    if self in UiNode.focus.outedges:
-                        UiNode.focus.outedges[self].remove()
-                        del UiNode.focus.outedges[self]
-                    else:
-                        x0, y0 = UiNode.focus.patch.get_center()
-                        x1, y1 = self.patch.get_center()
-                        _ = mpl.patches.FancyArrow(x0, y0, x1 - x0, y1 - y0)
-                        ax.add_patch(_)
-                        UiNode.focus.outedges[self] = _
-
-                    UiNode.focus.patch.set_edgecolor("black")
-                    UiNode.focus = None
-                ax.figure.canvas.draw()
-
-        return
-
-    def on_motion(self, event: mpl.backend_bases.MouseEvent):
-        # 检查是不是点击自己
-        patch = self.patch
-        ax = patch.axes
-        if event.inaxes != ax or UiNode.lock is not self:
-            return
-
-        # 移动自身
-        dx, dy = self.press_pos
-        patch.set_center((event.xdata - dx, event.ydata - dy))
-
-        # 重置背景
-        canvas = ax.figure.canvas
-        canvas.restore_region(self.background)
-
-        # 只重新绘制当前形状
-        patch.draw(canvas.get_renderer())
-        canvas.blit(ax.bbox)
-        return
-
-    def on_release(self, event):
-        # 检查是不是点击自己
-        patch = self.patch
-        ax = patch.axes
-        if event.inaxes != ax or UiNode.lock is not self:
-            return
-
-        UiNode.lock = None
-        patch.set_animated(False)
-        patch.figure.canvas.draw()
-        return
-
-    @staticmethod
-    def add_node_on_press(event: mpl.backend_bases.MouseEvent):
-        if event.button == mpl.backend_bases.MouseButton.LEFT:
-            # 左键双击添加结点
+                self.on_left_down(event)
+        elif event.button == MouseButton.RIGHT:
             if event.dblclick:
-                rects.append(UiNode(event.xdata, event.ydata, 0.1, ax))
-            ax.figure.canvas.draw()
+                self.on_right_dbdown(event)
+            else:
+                self.on_right_down(event)
+        return
+
+    def on_left_down(self, event: MouseEvent):
+        """按下左键拖动结点
+        """
+        focus: NodeUi = None
+        for i in self.ui_nodes:
+            if i.contains(event):
+                focus = i
+        if focus is None:
+            return
+
+        # 记录点击位置
+        x, y = focus.get_position()
+        dx, dy = event.xdata - x, event.ydata - y
+
+        # 绘制背景并保存到缓冲区
+        focus.set_animated(True)
+        self.can.draw()
+        background = self.can.copy_from_bbox(self.ax.bbox)
+
+        # 现在只重新绘制选中的图形
+        focus.draw()
+        self.can.blit(self.ax.bbox)
+
+        def on_motion(event: MouseEvent):
+            if event.inaxes is not self.ax:
+                return
+
+            # 重置背景
+            self.can.restore_region(background)
+
+            # 只重新绘制当前形状
+            x, y = event.xdata, event.ydata
+            focus.set_position(x - dx, y - dy)
+            focus.draw()
+            self.can.blit(self.ax.bbox)
+            return
+
+        def on_release(event: MouseEvent):
+            focus.set_animated(False)
+            self.can.mpl_disconnect(cid_motion)
+            self.can.mpl_disconnect(cid_release)
+            self.cid_press = self.can.mpl_connect(
+                "button_press_event",
+                self.on_press,
+            )
+            return
+
+        # 动态注册事件处理器
+        self.can.mpl_disconnect(self.cid_press)  # 可以确保同时只进行一个操作
+        cid_motion = self.can.mpl_connect("motion_notify_event", on_motion)
+        cid_release = self.can.mpl_connect("button_release_event", on_release)
+        return
+
+    def on_right_down(self, event):
+        """按下右键结点连线
+        """
+        focus: NodeUi = None
+        for i in self.ui_nodes:
+            if i.contains(event):
+                focus = i
+        if focus is None:
+            return
+
+        if self.selected is None:
+            # 选中第一个点
+            self.selected = focus
+            focus.set_selected()
+            self.can.draw()
+            return
+
+        if self.selected is focus:
+            # 再次点击取消选中
+            self.selected = None
+            focus.set_unselected()
+            self.can.draw()
+            return
+
+        # 连线
+        self.selected.link_to(focus)
+        if not self.directed:
+            focus.link_to(self.selected)
+        self.selected.set_unselected()
+        self.selected = None
+        self.can.draw()
+        return
+
+    def on_left_dbdown(self, event):
+        """左键双击添加结点
+        """
+        self.ui_nodes.append(NodeUi(event.xdata, event.ydata, self.ax))
+        self.can.draw()
+        return
+
+    def on_right_dbdown(self, event):
+        """右键双击删除结点
+        """
+        focus: NodeUi = None
+        index = None
+        for j, i in enumerate(self.ui_nodes):
+            if i.contains(event):
+                focus = i
+                index = j
+        if focus is None:
+            return
+
+        focus.remove()
+        del self.ui_nodes[index]
+        if self.selected is focus:
+            self.selected = None
+        self.can.draw()
         return
 
 
-fig = plt.gcf()
-ax = fig.add_subplot(aspect='equal')
-fig.canvas.mpl_connect('button_press_event', UiNode.add_node_on_press),
-rects = [
-    UiNode(np.random.random(), np.random.random(), 0.1, ax) for i in range(10)
-]
+def input_graph(directed=False):
+    graph_ui = GraphUi(plt.gcf(), directed)
+    graph_ui.connect()
+    plt.show()
+    return
 
-plt.show()
+
+if __name__ == "__main__":
+    input_graph()
