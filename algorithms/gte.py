@@ -48,7 +48,6 @@ class UiNode:
         self.connect(ax)
 
         self.outedges = {}
-        # TODO 拖动结点时同时更新连线
         return
 
     def connect(self, ax: plt.Axes):
@@ -78,8 +77,33 @@ class UiNode:
             return
 
         if event.button == mpl.backend_bases.MouseButton.LEFT:
-            # 左键双击给结点连线
+            # 左键单击拖动结点
+            if not event.dblclick:
+                # 记录点击位置
+                x, y = patch.get_center()
+                self.press_pos = event.xdata - x, event.ydata - y
+                UiNode.lock = self
+
+                # 绘制背景并保存到缓冲区
+                patch.set_animated(True)
+                canvas = patch.figure.canvas
+                canvas.draw()
+                self.background = canvas.copy_from_bbox(ax.bbox)
+
+                # 现在只重新绘制选中的图形
+                patch.draw(canvas.get_renderer())
+                canvas.blit(ax.bbox)
+
+        elif event.button == mpl.backend_bases.MouseButton.RIGHT:
+            # 右键双击删除结点
             if event.dblclick:
+                self.patch.remove()
+                if UiNode.focus is self:
+                    UiNode.focus = None  # 注意指针悬挂
+                ax.figure.canvas.draw()
+
+            # 右键单击给结点连线
+            else:
                 if UiNode.focus is None:
                     UiNode.focus = self
                     self.patch.set_edgecolor("red")
@@ -101,29 +125,6 @@ class UiNode:
                     UiNode.focus = None
                 ax.figure.canvas.draw()
 
-            # 左键单击拖动结点
-            else:
-                # 记录点击位置
-                x, y = patch.get_center()
-                self.press_pos = event.xdata - x, event.ydata - y
-                UiNode.lock = self
-
-                # 绘制背景并保存到缓冲区
-                patch.set_animated(True)
-                canvas = patch.figure.canvas
-                canvas.draw()
-                self.background = canvas.copy_from_bbox(ax.bbox)
-
-                # 现在只重新绘制选中的图形
-                patch.draw(canvas.get_renderer())
-                canvas.blit(ax.bbox)
-
-        # 右键点击删除结点
-        elif event.button == mpl.backend_bases.MouseButton.RIGHT:
-            self.patch.remove()
-            if UiNode.focus is self:
-                UiNode.focus = None  # 注意指针悬挂
-            ax.figure.canvas.draw()
         return
 
     def on_motion(self, event: mpl.backend_bases.MouseEvent):
@@ -160,12 +161,17 @@ class UiNode:
 
     @staticmethod
     def add_node_on_press(event: mpl.backend_bases.MouseEvent):
-        # 鼠标中键添加结点
+        if event.button == mpl.backend_bases.MouseButton.LEFT:
+            # 左键双击添加结点
+            if event.dblclick:
+                rects.append(UiNode(event.xdata, event.ydata, 0.1, ax))
+            ax.figure.canvas.draw()
         return
 
 
 fig = plt.gcf()
 ax = fig.add_subplot(aspect='equal')
+fig.canvas.mpl_connect('button_press_event', UiNode.add_node_on_press),
 rects = [
     UiNode(np.random.random(), np.random.random(), 0.1, ax) for i in range(10)
 ]
