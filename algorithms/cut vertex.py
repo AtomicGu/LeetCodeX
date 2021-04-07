@@ -1,58 +1,72 @@
-"""求出图上所有的割点
+"""求出无向图中所有的割点
+
+是Tarjan算法变种之一
+
+注意割点一般都定义在无向图中，有向图中不大有类似概念
 """
 
 from gte import input_graph, Node
 
-graph = input_graph()
-
-# graph = [Node(i) for i in range(6)]
-# graph[0].link(graph[1])
-# graph[0].link(graph[2])
-# graph[1].link(graph[2])
-# graph[2].link(graph[3])
-# graph[3].link(graph[4])
-# graph[3].link(graph[5])
+dfn = 0
 
 
-def dfs(node: Node, depth: int, come: Node):
-    setattr(node, "depth", depth)
+def dfs(node: Node, come: Node) -> int:
+    """返回从node出发所能到达结点的最小dfn值
+    """
+    global dfn
 
-    setattr(node, "walked", True)
-    min_depth = depth
-    is_cut_vertex = False
+    dfn += 1
+    node.dfn = dfn
+
+    if len(node.tos) <= 1:
+        # 只有一个边的结点不可能是割点
+        return node.dfn
+
+    low = node.dfn
+    is_cut = False
     for i in node.tos:
         if i is come:
-            continue
-        if hasattr(i, "walked"):
-            min_depth = min(min_depth, i.depth)
+            continue  # 跳过进入时的边
+
+        if hasattr(i, "dfn"):
+            low = min(low, i.dfn)
+            # 如果i.dfn比node.dfn小，说明发现回路，应当更新low值
+            # 如果大，说明从node出发一定有另外一条路到i，那条路和这条路构成了回路，这时什么都不做
+            # 如果等于，说明是自环，也什么都不做
         else:
-            if hasattr(node, "min_depth_can_go"):
-                a = node.min_depth_can_go
-            else:
-                a = dfs(i, depth + 1, node)
-            if a >= depth:
-                is_cut_vertex = True
-            min_depth = min(min_depth, a)
-    delattr(node, "walked")
+            t = dfs(i, node)
+            if t >= node.dfn:
+                is_cut = True  # 任何一个子树不满足，node就是一个割点
 
-    setattr(node, "min_depth_can_go", min_depth)
-    if is_cut_vertex:
+            elif t < low:  # 当t比node.dfn还大时不可能比low更小
+                low = t
+
+    if is_cut:
         print(node.index)
-    return min_depth
+
+    return low
 
 
-def find_cut_vertex(node: Node):
-    setattr(node, "depth", 0)
+def dfs_root(root: Node):
+    global dfn
 
-    setattr(node, "walked", True)
-    node_is_cut_vertex = False
-    for i in node.tos:
-        if dfs(i, 1, node) > 0:
-            node_is_cut_vertex = True
-    delattr(node, "walked")
-    if len(node.tos) >= 2 and node_is_cut_vertex:
-        print(node.index)
+    dfn = 0
+    root.dfn = dfn
+
+    subtree = 0
+    for i in root.tos:
+        if i is root:
+            continue  # 跳过根上的自环
+
+        if not hasattr(i, "dfn"):
+            subtree += 1
+            dfs(i, root)
+
+    if subtree > 1:
+        # DFS起点（树根）的判定和一般结点不一样
+        print(root.index)
     return
 
 
-find_cut_vertex(graph[0])
+graph = input_graph()
+dfs_root(graph[0])
