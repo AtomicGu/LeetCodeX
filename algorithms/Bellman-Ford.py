@@ -10,6 +10,8 @@ from pprint import pprint
 
 
 class Node:
+    """有权图的结点类
+    """
     def __init__(self, index):
         self.index = index
         self.tos = []
@@ -20,7 +22,7 @@ class Node:
         for u, v in self.tos:
             a = edges.setdefault(u.index, [])
             a.append(v)
-        return f"<{self.index} -> {edges}"
+        return f"{self.index} -> {edges}"
 
     def link_to(self, other, weight):
         self.tos.append((other, weight))

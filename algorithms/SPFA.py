@@ -49,11 +49,11 @@ while queue:
         print("有负环")
         exit(0)
     for u, v in i.tos:
-        if not hasattr(u, "d") or u.d > i.d + v:
+        if not hasattr(u, "d") or u.d > i.d + v:  # 松弛
             u.d = i.d + v
             u.p = i
             queue.append(u)
-            counter[u] += 1
+            counter[u] += 1  # 每松弛一次加计数器，用于判负环
 
 # 输出
 for i in graph:

@@ -31,7 +31,7 @@ class Node:
     def __repr__(self) -> str:
         to_index = {to.index for to in self.tos}
         fr_index = {fr.index for fr in self.frs}
-        return f"\n{self.index} -> {to_index}\n   <- {fr_index}"
+        return f"{self.index} ->{to_index}\n   <-{fr_index}\n"
 
     def link_to(self, other: "Node"):
         """单向连接
@@ -45,6 +45,13 @@ class Node:
         """
         self.link_to(other)
         other.link_to(self)
+        return
+
+    def unlink_to(self, other: "Node"):
+        """断开连接
+        """
+        self.tos.discard(other)
+        other.frs.discard(self)
         return
 
 
