@@ -17,11 +17,7 @@ def calc_next(needle) -> list[int]:
     j = 0
     for i in range(1, len(needle)):
         if needle[i] == needle[j]:
-            while True:
-                k = next[j]
-                if k == -1 or needle[i] != needle[k]:
-                    break
-            next[i] = k
+            next[i] = next[j]
         else:
             next[i] = j
             while True:
