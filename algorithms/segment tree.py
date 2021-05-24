@@ -1,4 +1,8 @@
 """线段树
+
+详解：https://www.cnblogs.com/xenny/p/9801703.html
+
+要注意线段树数组的 0 位置是哨兵，结点从 1 开始标号。
 """
 
 nums = [1, 8, 6, 4, 3, 5]
@@ -21,7 +25,7 @@ def build_tree(k=1, l=0, r=len(nums)):
 
     m = (l + r) >> 1
     build_tree(k << 1, l, m)
-    build_tree(k << 1 | 1, m, r)
+    build_tree(k << 1 | 1, m, r)  # 如果不用哨兵，这里就会变成 k << 1 + 2，很不简洁
 
     tree[k] = max(tree[k << 1], tree[k << 1 | 1])
     return
