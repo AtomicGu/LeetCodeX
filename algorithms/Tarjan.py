@@ -17,8 +17,7 @@ stack = []
 
 
 def dfs(node: Node) -> int:
-    """返回从node出发所能到达结点的最小dfn值
-    """
+    """返回从node出发所能到达结点的最小dfn值"""
     global color, dfn
 
     if hasattr(node, "color"):
@@ -41,11 +40,11 @@ def dfs(node: Node) -> int:
     # low等于dfn说明发现了新的联通分量
     if low == node.dfn:
         color += 1
+        node.color = color
         a = stack.pop()
         while a is not node:
             a.color = color
             a = stack.pop()
-        a.color = color  # 给node自身上色
 
     return low
 

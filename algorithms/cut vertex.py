@@ -11,8 +11,7 @@ dfn = 0
 
 
 def dfs(node: Node, come: Node) -> int:
-    """返回从node出发所能到达结点的最小dfn值
-    """
+    """返回从node出发所能到达结点的最小dfn值"""
     global dfn
 
     dfn += 1
