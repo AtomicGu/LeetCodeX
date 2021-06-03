@@ -26,6 +26,8 @@ def build_tree(k=1, l=0, r=len(nums)):
     m = (l + r) >> 1
     build_tree(k << 1, l, m)
     build_tree(k << 1 | 1, m, r)  # 如果不用哨兵，这里就会变成 k << 1 + 2，很不简洁
+    # ! 如果是四叉树，不使用哨兵，第 i 个结点的子节点为 4i+1、4i+2、4i+3、4i+4，很有规律，
+    # ! 如果用哨兵，就是 4i-2、4i-1、4i、4i+1，反而用哨兵就会很丑陋。
 
     tree[k] = max(tree[k << 1], tree[k << 1 | 1])
     return
