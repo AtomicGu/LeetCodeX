@@ -9,7 +9,7 @@
 按空格键给结点统一编号
 """
 
-from typing import List
+from typing import List, MutableSet
 
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import KeyEvent, MouseButton, MouseEvent
@@ -17,15 +17,15 @@ from matplotlib.patches import FancyArrowPatch
 
 
 class Node:
-    """同时适用于有向图和无向图的结点类
-    """
+    """同时适用于有向图和无向图的结点类"""
+
     def __init__(self, index=None):
         if index is None:
             self.index = id(self) % 100
         else:
             self.index = index
-        self.tos = set()
-        self.frs = set()
+        self.tos: MutableSet[Node] = set()
+        self.frs: MutableSet[Node] = set()
         return
 
     def __repr__(self) -> str:
@@ -34,22 +34,19 @@ class Node:
         return f"{self.index} ->{to_index}\n   <-{fr_index}\n"
 
     def link_to(self, other: "Node"):
-        """单向连接
-        """
+        """单向连接"""
         self.tos.add(other)
         other.frs.add(self)
         return
 
     def link(self, other: "Node"):
-        """双向连接
-        """
+        """双向连接"""
         self.link_to(other)
         other.link_to(self)
         return
 
     def unlink_to(self, other: "Node"):
-        """断开连接
-        """
+        """断开连接"""
         self.tos.discard(other)
         other.frs.discard(self)
         return
@@ -206,8 +203,7 @@ class GraphUi:
         return
 
     def on_press(self, event: MouseEvent):
-        """鼠标事件分流
-        """
+        """鼠标事件分流"""
         if event.inaxes is not self.ax:
             return
 
@@ -224,8 +220,7 @@ class GraphUi:
         return
 
     def on_left_down(self, event: MouseEvent):
-        """按下左键拖动结点
-        """
+        """按下左键拖动结点"""
         focus: NodeUi = None
         for i in self.ui_nodes:
             if i.contains(event):
@@ -278,8 +273,7 @@ class GraphUi:
         return
 
     def on_right_down(self, event):
-        """按下右键结点连线
-        """
+        """按下右键结点连线"""
         focus: NodeUi = None
         for i in self.ui_nodes:
             if i.contains(event):
@@ -317,15 +311,13 @@ class GraphUi:
         return
 
     def on_left_dbdown(self, event):
-        """左键双击添加结点
-        """
+        """左键双击添加结点"""
         self.ui_nodes.append(NodeUi(event.xdata, event.ydata, self.ax))
         self.can.draw()
         return
 
     def on_right_dbdown(self, event):
-        """右键双击删除结点
-        """
+        """右键双击删除结点"""
         focus: NodeUi = None
         index = None
         for j, i in enumerate(self.ui_nodes):
@@ -343,8 +335,7 @@ class GraphUi:
         return
 
     def on_key_press(self, event: KeyEvent):
-        """按空格给结点编号
-        """
+        """按空格给结点编号"""
         if event.key == " ":
             self.index_nodes()
             self.can.draw()
@@ -356,8 +347,7 @@ class GraphUi:
         return
 
     def output_model(self):
-        """输出数据模型
-        """
+        """输出数据模型"""
         self.index_nodes()
         model = [Node(i) for i in range(len(self.ui_nodes))]
         for i in self.ui_nodes:
