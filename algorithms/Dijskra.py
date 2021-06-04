@@ -13,8 +13,8 @@ from pprint import pprint
 
 
 class Node:
-    """有权图的结点类
-    """
+    """有权图的结点类"""
+
     def __init__(self, index):
         self.index = index
         self.tos = []
