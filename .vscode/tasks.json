@@ -1,0 +1,17 @@
+{
+  "tasks": [
+    {
+      "type": "cppbuild",
+      "label": "C/C++: g++.exe build active file",
+      "command": "D:/mingw-w64/i686-8.1.0-posix-dwarf-rt_v6-rev0/mingw32/bin/g++.exe",
+      "args": ["-g", "${file}", "-o", "${fileDirname}/a.exe"],
+      "options": {
+        "cwd": "D:/mingw-w64/i686-8.1.0-posix-dwarf-rt_v6-rev0/mingw32/bin"
+      },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "detail": "调试器生成的任务。"
+    }
+  ],
+  "version": "2.0.0"
+}

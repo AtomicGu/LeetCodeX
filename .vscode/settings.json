@@ -1,0 +1,11 @@
+{
+  "python.pythonPath": "D:\\Python\\Python39\\python.exe",
+  "python.analysis.extraPaths": ["${workspaceFolder}/algorithms"],
+  "files.associations": {
+    "*.json": "jsonc",
+    "TODO": "markdown",
+    ".prettierrc": "jsonc",
+    "vector": "cpp",
+    "xstring": "cpp"
+  }
+}

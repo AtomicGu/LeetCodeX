@@ -1,0 +1,49 @@
+{
+  // 使用 IntelliSense 了解相关属性。
+  // 悬停以查看现有属性的描述。
+  // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: 当前文件",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "CCSP Judge",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/ccsp/judge.py",
+      "console": "integratedTerminal",
+      "args": [
+        "ccsp\\4\\2-card\\meterials\\fgy\\fgy.py",
+        "ccsp\\4\\2-card\\meterials\\data"
+      ],
+      "justMyCode": true
+    },
+    {
+      "name": "C/C++: 当前文件",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${fileDirname}/a.exe",
+      "args": ["<", "in.txt"],
+      "stopAtEntry": true,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": true, // 没想到啊！没想到
+      "MIMode": "gdb",
+      "miDebuggerPath": "D:/mingw-w64/i686-8.1.0-posix-dwarf-rt_v6-rev0/mingw32/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "为 gdb 启用整齐打印",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "C/C++: g++.exe build active file"
+    }
+  ]
+}
