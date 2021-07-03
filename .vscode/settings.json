@@ -6,6 +6,7 @@
     "TODO": "markdown",
     ".prettierrc": "jsonc",
     "vector": "cpp",
-    "xstring": "cpp"
+    "xstring": "cpp",
+    "ostream": "cpp"
   }
 }
